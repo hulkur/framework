@@ -34,7 +34,10 @@ class RepositoryTest extends TestCase
             ],
             'x' => [
                 'z' => 'zoo',
+                'w' => 'resolved'
             ],
+            'resolvable' => 'x.w',
+            'not-resolvable' => 'x.a',
         ]);
 
         parent::setUp();
@@ -48,16 +51,20 @@ class RepositoryTest extends TestCase
     public function testHasIsTrue()
     {
         $this->assertTrue($this->repository->has('foo'));
+        $this->assertTrue($this->repository->has('{resolvable}'));
     }
 
     public function testHasIsFalse()
     {
         $this->assertFalse($this->repository->has('not-exist'));
+        $this->assertFalse($this->repository->has('{not-resolvable}'));
+        $this->assertFalse($this->repository->has('{not-exist-resolvable}'));
     }
 
     public function testGet()
     {
         $this->assertSame('bar', $this->repository->get('foo'));
+        $this->assertSame('resolved', $this->repository->get('{resolvable}'));
     }
 
     public function testGetWithArrayOfKeys()
@@ -66,10 +73,12 @@ class RepositoryTest extends TestCase
             'foo' => 'bar',
             'bar' => 'baz',
             'none' => null,
+            'x.w' => 'resolved',
         ], $this->repository->get([
             'foo',
             'bar',
             'none',
+            '{resolvable}',
         ]));
 
         $this->assertSame([
@@ -77,11 +86,17 @@ class RepositoryTest extends TestCase
             'x.z' => 'zoo',
             'bar' => 'baz',
             'baz' => 'bat',
+            'x.w' => 'resolved',
+            'x.a' => 'default',
+            '{not-exist-resolvable}' => 'default',
         ], $this->repository->get([
             'x.y' => 'default',
             'x.z' => 'default',
             'bar' => 'default',
             'baz',
+            '{resolvable}' => 'default',
+            '{not-resolvable}' => 'default',
+            '{not-exist-resolvable}' => 'default',
         ]));
     }
 
@@ -91,10 +106,16 @@ class RepositoryTest extends TestCase
             'foo' => 'bar',
             'bar' => 'baz',
             'none' => null,
+            'x.w' => 'resolved',
+            'x.a' => null,
+            '{not-exist-resolvable}' => null,
         ], $this->repository->getMany([
             'foo',
             'bar',
             'none',
+            '{resolvable}',
+            '{not-resolvable}',
+            '{not-exist-resolvable}',
         ]));
 
         $this->assertSame([
@@ -102,17 +123,25 @@ class RepositoryTest extends TestCase
             'x.z' => 'zoo',
             'bar' => 'baz',
             'baz' => 'bat',
+            'x.w' => 'resolved',
+            'x.a' => 'default',
+            '{not-exist-resolvable}' => 'default',
         ], $this->repository->getMany([
             'x.y' => 'default',
             'x.z' => 'default',
             'bar' => 'default',
             'baz',
+            '{resolvable}' => 'default',
+            '{not-resolvable}' => 'default',
+            '{not-exist-resolvable}' => 'default',
         ]));
     }
 
     public function testGetWithDefault()
     {
         $this->assertSame('default', $this->repository->get('not-exist', 'default'));
+        $this->assertSame('default', $this->repository->get('{not-resolvable}', 'default'));
+        $this->assertSame('default', $this->repository->get('{not-exist-resolvable}', 'default'));
     }
 
     public function testSet()
@@ -152,12 +181,18 @@ class RepositoryTest extends TestCase
     {
         $this->assertTrue(isset($this->repository['foo']));
         $this->assertFalse(isset($this->repository['not-exist']));
+        $this->assertTrue(isset($this->repository['{resolvable}']));
+        $this->assertFalse(isset($this->repository['{not-resolvable}']));
+        $this->assertFalse(isset($this->repository['{not-exist-resolvable}']));
     }
 
     public function testOffsetGet()
     {
         $this->assertNull($this->repository['not-exist']);
+        $this->assertNull($this->repository['{not-resolvable}']);
+        $this->assertNull($this->repository['{not-exist-resolvable}']);
         $this->assertSame('bar', $this->repository['foo']);
+        $this->assertSame('resolved', $this->repository['{resolvable}']);
         $this->assertSame([
             'x' => 'xxx',
             'y' => 'yyy',

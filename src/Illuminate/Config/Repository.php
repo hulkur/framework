@@ -34,6 +34,10 @@ class Repository implements ArrayAccess, ConfigContract
      */
     public function has($key)
     {
+        if (preg_match('/\{(.*)\}/', $key, $m)) {
+            $key = Arr::get($this->items, $m[1]);
+        }
+
         return Arr::has($this->items, $key);
     }
 
@@ -48,6 +52,13 @@ class Repository implements ArrayAccess, ConfigContract
     {
         if (is_array($key)) {
             return $this->getMany($key);
+        }
+
+        if (preg_match('/\{(.*)\}/', $key, $m)) {
+            $key = Arr::get($this->items, $m[1]);
+            if ($key === null) {
+                return $default;
+            }
         }
 
         return Arr::get($this->items, $key, $default);
@@ -66,6 +77,15 @@ class Repository implements ArrayAccess, ConfigContract
         foreach ($keys as $key => $default) {
             if (is_numeric($key)) {
                 [$key, $default] = [$default, null];
+            }
+
+            if (preg_match('/\{(.*)\}/', $key, $m)) {
+                $resolvedKey = Arr::get($this->items, $m[1]);
+                if ($resolvedKey === null) {
+                    $config[$key] = $default;
+                    continue;
+                }
+                $key = $resolvedKey;
             }
 
             $config[$key] = Arr::get($this->items, $key, $default);
